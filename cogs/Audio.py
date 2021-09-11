@@ -218,9 +218,9 @@ class Audio(commands.Cog):
         if local_queue['vc_obj'].is_playing():
             # Create the progress bar (unit of 20), this is kinda fun lol 
             current_song = local_queue['song_list'][local_queue['current']]
-            progress = int( (local_queue['time_elapsed'] / current_song['duration']) * 20)
+            progress = int( (local_queue['time_elapsed'] / current_song['duration']) * 13)
             leftbars = "▬" * progress
-            rightbars = "▬" * (20 - progress)
+            rightbars = "▬" * (13 - progress)
             await ctx.send(embed=discord.Embed(title=current_song['title'], description=f"{leftbars}🔵{rightbars} {int(local_queue['time_elapsed'])}/{current_song['duration']}s", color=player_info.green))
         else:
             await ctx.send(embed=discord.Embed(description="A song is not playing", color=player_info.green))
