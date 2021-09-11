@@ -28,12 +28,12 @@ class Audio(commands.Cog):
                 else:
                     text += f"{song_index}: {song['title']}\n"
 
-        await ctx.send(embed=discord.Embed(title="Song queue", description=text, color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(title="Song queue", description=text, color=player_info.green))
     
     @commands.command(aliases=["p"])
     async def play(self, ctx, *, query):
         if ctx.author.voice == None:
-            return await ctx.send("You're not connected to a voice channel")
+            return await ctx.send(embed=discord.Embed(description="You're not connected to a voice channel", color=player_info.red))
 
         user_vc = ctx.author.voice.channel
         vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
@@ -48,40 +48,20 @@ class Audio(commands.Cog):
         queue_text = ""
 
         for query in queries:
+            is_url = False
             if query[-2:] == '-b':
                 query = query[:-2]
-                info = player.search(query, bilibili=True)
-            else:
-                info = player.search(query)
+                is_url = True
+
+            info = player.search(query, is_url=is_url)
             local_queue['song_list'].append(info)
             queue_text += info['title'] + '\n'
         # Remove the last newline character from string
         queue_text = queue_text[:-1]
 
-        await ctx.send(embed=discord.Embed(title="Queued", description=queue_text, color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(title="Queued", description=queue_text, color=player_info.green))
         if not vc.is_playing():
-            while not (local_queue['destroy']):
-
-                while local_queue['current'] > (len(local_queue['song_list'])-1):
-                    await asyncio.sleep(1) # Stop it from playing more songs until song count is at a normal value
-                
-                options = player.parse_options(local_queue['ffmpeg_options'])
-
-                song_info = local_queue['song_list'][local_queue['current']]
-                vc.play(discord.FFmpegPCMAudio(source=song_info['url'], options=options))
-                while (vc.is_playing() or local_queue['pause']):
-                    await asyncio.sleep(0.5)
-                    local_queue['time_elapsed'] += 0.5*(not local_queue['pause'])
-
-                if not local_queue["loop"]:
-                    local_queue['current'] += 1
-                
-                if local_queue['current'] > len(local_queue['song_list'])-1:
-                    if local_queue['loopqueue']:
-                        local_queue['current'] = 0
-                
-                local_queue['time_elapsed'] = 0
-            del self.bot.global_queue[vc.channel.id]
+            await player.start_song_loop(self, ctx)
 
     @commands.command()
     async def loop(self, ctx):
@@ -105,7 +85,7 @@ class Audio(commands.Cog):
             local_queue['loop'] = False
             text = "Looping queue"
 
-        await ctx.send(embed=discord.Embed(description=text, color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description=text, color=player_info.green))
 
     @commands.command()
     async def replay(self, ctx):
@@ -117,7 +97,7 @@ class Audio(commands.Cog):
         self.bot.global_queue[vc_id]['current'] = 0
         self.bot.global_queue[vc_id]['time_elapsed'] = 0
         await player.restart(self, ctx)
-        await ctx.send(embed=discord.Embed(description="Replaying queue from the start", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description="Replaying queue from the start", color=player_info.green))
     
     @commands.command(aliases=['s'])
     async def skip(self, ctx):
@@ -136,7 +116,7 @@ class Audio(commands.Cog):
         self.bot.global_queue[ctx.author.voice.channel.id]['vc_obj'].pause()
         self.bot.global_queue[ctx.author.voice.channel.id]['pause'] = True
 
-        await ctx.send(embed=discord.Embed(description="Paused", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description="Paused", color=player_info.green))
     
     @commands.command(aliases=['resume'])
     async def unpause(self, ctx):
@@ -145,7 +125,7 @@ class Audio(commands.Cog):
         
         self.bot.global_queue[ctx.author.voice.channel.id]['vc_obj'].resume()
         self.bot.global_queue[ctx.author.voice.channel.id]['pause'] = False
-        await ctx.send(embed=discord.Embed(description="Unpaused", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description="Unpaused", color=player_info.green))
     
     @commands.command(aliases=['j'])
     async def jump(self, ctx, n: int):
@@ -178,7 +158,7 @@ class Audio(commands.Cog):
 
         self.bot.global_queue[ctx.author.voice.channel.id]['song_list'] = []
         self.bot.global_queue[ctx.author.voice.channel.id]['current'] = 0
-        await ctx.send(embed=discord.Embed(description="Queue has been cleared", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description="Queue has been cleared", color=player_info.green))
 
     @commands.command(aliases=['dc'])
     async def disconnect(self, ctx):
@@ -189,11 +169,12 @@ class Audio(commands.Cog):
         local_queue['vc_obj'].stop()
         await local_queue['vc_obj'].disconnect()
         local_queue['loop'] = False
+        local_queue['current'] = 0
         local_queue['pause'] = False
         local_queue['destroy'] = True
 
-        
-        await ctx.send(embed=discord.Embed(description="Disconnected", color=player_info.embed_color))
+        del self.bot.global_queue[ctx.author.voice.channel.id]
+        await ctx.send(embed=discord.Embed(description="Disconnected", color=player_info.green))
 
     @commands.command()
     async def remove(self, ctx, n: int):
@@ -227,7 +208,7 @@ class Audio(commands.Cog):
             song_list[j] = temp
 
 
-        await ctx.send(embed=discord.Embed(description="Shuffled", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description="Shuffled", color=player_info.green))
 
     @commands.command(aliases=['np'])
     async def current(self, ctx):
@@ -240,9 +221,9 @@ class Audio(commands.Cog):
             progress = int( (local_queue['time_elapsed'] / current_song['duration']) * 20)
             leftbars = "▬" * progress
             rightbars = "▬" * (20 - progress)
-            await ctx.send(embed=discord.Embed(title=current_song['title'], description=f"{leftbars}🔵{rightbars} {int(local_queue['time_elapsed'])}/{current_song['duration']}s", color=player_info.embed_color))
+            await ctx.send(embed=discord.Embed(title=current_song['title'], description=f"{leftbars}🔵{rightbars} {int(local_queue['time_elapsed'])}/{current_song['duration']}s", color=player_info.green))
         else:
-            await ctx.send(embed=discord.Embed(description="A song is not playing", color=player_info.embed_color))
+            await ctx.send(embed=discord.Embed(description="A song is not playing", color=player_info.green))
 
 def setup(bot):
     bot.add_cog(Audio(bot))

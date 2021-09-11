@@ -23,7 +23,7 @@ class Effects(commands.Cog):
         n = int(n)
         ffmpeg_options['volume'] = f'volume={n/100}'
         await player.restart(self,ctx)
-        await ctx.send(embed=discord.Embed(description=f"Volume set to {n}%", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description=f"Volume set to {n}%", color=player_info.green))
 
     @commands.command()
     async def speed(self, ctx, n):
@@ -40,11 +40,11 @@ class Effects(commands.Cog):
 
         n = int(n)
         if n < 50 or n > 200:
-            return await ctx.send(embed=discord.Embed(description=f"Speed is only limited between 50% and 200%", color=player_info.embed_color))
+            return await ctx.send(embed=discord.Embed(description=f"Speed is only limited between 50% and 200%", color=player_info.green))
 
         local_queue['ffmpeg_options']['speed'] = f"atempo={n/100}"
         await player.restart(self, ctx)
-        await ctx.send(embed=discord.Embed(description=f"Speed set to {n}%", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description=f"Speed set to {n}%", color=player_info.green))
 
 
     @commands.command(aliases=['ffopt'])
@@ -81,7 +81,7 @@ class Effects(commands.Cog):
             return
         new_timestamp = self.bot.global_queue[ctx.author.voice.channel.id]['time_elapsed'] + n
         await self.seek(ctx, new_timestamp)
-        await ctx.send(embed=discord.Embed(description=f"Fast fowarded {n} seconds", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description=f"Fast fowarded {n} seconds", color=player_info.green))
 
     @commands.command()
     async def reset(self,ctx):
@@ -90,7 +90,7 @@ class Effects(commands.Cog):
 
         self.bot.global_queue[ctx.author.voice.channel.id]['ffmpeg_options'] = {}
         await player.restart(self, ctx)
-        await ctx.send(embed=discord.Embed(description="All effects has been cleared", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description="All effects has been cleared", color=player_info.green))
 
 
 
@@ -111,7 +111,7 @@ class Effects(commands.Cog):
         n = int(n)
         local_queue['ffmpeg_options']['bass'] = f"bass=g={n}"
         await player.restart(self, ctx)
-        await ctx.send(embed=discord.Embed(description=f"Bass set to {n}", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description=f"Bass set to {n}", color=player_info.green))
 
 
 
@@ -132,7 +132,7 @@ class Effects(commands.Cog):
         n = int(n)
         local_queue['ffmpeg_options']['pitch'] = f"asetrate={n + 44100}"
         await player.restart(self, ctx)
-        await ctx.send(embed=discord.Embed(description=f"Pitch has been offset to {n}", color=player_info.embed_color))
+        await ctx.send(embed=discord.Embed(description=f"Pitch has been offset to {n}", color=player_info.green))
 
 
 def setup(bot):
