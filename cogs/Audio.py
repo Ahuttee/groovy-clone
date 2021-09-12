@@ -67,7 +67,6 @@ class Audio(commands.Cog):
                     local_queue['time_elapsed'] += 1*(not local_queue['pause']) # Will add 1 if its not pause
                 # Since song finished, Go to next song
                 local_queue['current'] += 1
-                print(local_queue['current'])
                 local_queue['time_elapsed'] = 0
                 # We do a little trolling
             vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))
