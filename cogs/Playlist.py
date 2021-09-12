@@ -4,7 +4,7 @@ from stuff import player_info
 from utils import player
 from discord.ext import commands
 
-with open("playlist_db.json", "r") as f:
+with open("db/playlist.json", "r") as f:
     playlist_db = json.load(f)
 
 # An additional retarded step to convert all id keys to string, thx json
@@ -51,31 +51,15 @@ class Playlist(commands.Cog):
         playlists = playlist_db[ctx.author.id]
         if name not in playlists:   return await ctx.send(embed=discord.Embed(description="Playlist does not exist", color=player_info.red))
 
-
-        queue = []
+        play_command_text = ""
         loading_msg = await ctx.send(embed=discord.Embed(description="Loading playlist...", color=player_info.blue))
         for song in playlists[name]:
-            queue.append(player.search(song['query'], song['is_url']))
+            play_command_text += song['query'] + ","
+        # Remove the last ","
+        play_command_text = play_command_text[:-1]
 
-        user_vc = ctx.author.voice.channel
-        vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
-        if not vc:
-            vc = await user_vc.connect()
-
-        if vc.channel.id not in self.bot.global_queue:
-            self.bot.global_queue[vc.channel.id] = {"current": 0, "song_list": [], "vc_obj": vc, "loop":False, "destroy":False, "pause":False, "time_elapsed": 0, "loopqueue":False, "ffmpeg_options":{}} 
-
-        local_queue = self.bot.global_queue[vc.channel.id]
-        
-        if overwrite:
-            local_queue['song_list'] = []
-            local_queue['current'] = 0
-        
-        local_queue['time_elapsed'] = 0
-        local_queue['song_list'] += queue
         await loading_msg.edit(embed=discord.Embed(description="Playlist loaded", color=player_info.green))
-        if not vc.is_playing():
-            await player.start_song_loop(self, ctx)
+        await ctx.invoke(self.bot.get_command('play'), query=play_command_text)       
 
     @commands.command()
     async def append(self, ctx, *, name):
@@ -93,13 +77,12 @@ class Playlist(commands.Cog):
             song_dict = {
                     'title':song['title'],
                     'query':song['query'],
-                    'is_url':song['is_url']
                     }
 
             queue.append(song_dict)
 
         playlist_db[ctx.author.id][name] = queue.copy()
-        with open("playlist_db.json", 'w') as f:
+        with open("db/playlist.json", 'w') as f:
             json.dump(playlist_db, f)
 
         await ctx.send(embed=discord.Embed(description="Playlist saved", color=player_info.green))

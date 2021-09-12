@@ -1,7 +1,12 @@
 import youtube_dl
 from stuff import player_info
 import discord
+import json
 import asyncio
+import threading
+
+with open("db/song_index.json", "r") as f:
+    song_index = json.load(f)
 
 async def check_user_vc(bot, ctx):  #Check if user is in a vc & if that vc contains a queue
     if ctx.author.voice == None:
@@ -26,35 +31,78 @@ def parse_options(option_dict):
 
     return options
 
+def query_exists(query):
+    for yt_id in song_index:
+        if query in song_index[yt_id]['queries']:
+            song_info = song_index[yt_id]
+            return {
+            "title": song_info['title'],
+            "url":  song_info['url'],
+            "query": query,
+            "duration": song_info['duration']
+        }
+    return False
+
 
 # Gets song information
 
-def search(query, is_url=False):
+def download_song(info_dict, options, query):
+    global song_index
+    with youtube_dl.YoutubeDL(options) as ytdl:
+        ytdl.extract_info(info_dict['url'], download=True)
+    song_index[info_dict['id']] = {
+                "title":info_dict['title'],
+                "url": f"songs/{info_dict['id']}",
+                "queries": [query],
+                "duration": info_dict['duration']
+            }
+    with open('db/song_index.json', 'w') as f:
+        json.dump(song_index, f)    
+
+async def search(query):
+    global song_index
+
     ytdl_options = {
     "noplaylist": True,
     "format": "bestaudio",
-    "quiet": True
+    "quiet": True,
         }
-
-    if is_url:
-        del ytdl_options['format']
+    song_info = query_exists(query)
+    if song_info:
+        return {
+            "title": song_info['title'],
+            "url":  song_info['url'],
+            "query": query,
+            "duration": song_info['duration']
+        }
+    #else
     with youtube_dl.YoutubeDL(ytdl_options) as ytdl:
-        if is_url:
-            info_dict = ytdl.extract_info(query, download=False)
-        else:
-            info_dict = ytdl.extract_info(f"ytsearch:{query}", download=False)['entries'][0]
-
-    useful_info = {
-                "title": info_dict['title'],
-                "url":  info_dict['url'],
-                "query": query,
-                "is_url": is_url,
+        info_dict = ytdl.extract_info('ytsearch:' + query, download=False)['entries'][0]
+    if info_dict['id'] in song_index:
+        song_index[info_dict['id']]['queries'].append(query)
+        with open('db/song_index.json', 'w') as f:
+            json.dump(song_index, f)
+        return query_exists(query)
+    else:
+        ytdl_options['outtmpl'] = 'songs/' + info_dict['id']
+        with youtube_dl.YoutubeDL(ytdl_options) as ytdl:
+            song_index[info_dict['id']] = {
+                "title":info_dict['title'],
+                "url": f"songs/{info_dict['id']}",
+                "queries": [query],
                 "duration": info_dict['duration']
             }
+            t = threading.Thread(target=download_song, args=[info_dict, ytdl_options, query])
+            t.setDaemon(False)
+            t.start()
+            return {
+                    "title":info_dict['title'],
+                    "url":info_dict['url'],
+                    "duration":info_dict['duration']
+                    }
 
-    return useful_info
  
-async def restart(self, ctx):
+def restart(self, ctx):
     local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
     local_queue['vc_obj'].stop()
     # Add exisitng effects
@@ -64,31 +112,3 @@ async def restart(self, ctx):
     local_queue['vc_obj'].play(discord.FFmpegPCMAudio(source=local_queue['song_list'][local_queue['current']]['url'], options=options +
 f" -vn -ss {timestamp}"))
 
-
-async def start_song_loop(self, ctx):
-    local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
-    vc = local_queue['vc_obj']
-    while not (local_queue['destroy']):
-
-        options = parse_options(local_queue['ffmpeg_options'])
-
-        song_info = local_queue['song_list'][local_queue['current']]
-        vc.play(discord.FFmpegPCMAudio(source=song_info['url'], options=options))
-        while (vc.is_playing() or local_queue['pause']):
-            await asyncio.sleep(0.5)
-            local_queue['time_elapsed'] += 0.5*(not local_queue['pause'])
-
-        if not local_queue["loop"]:
-            local_queue['current'] += 1
-
-        if local_queue['current'] > len(local_queue['song_list'])-1:
-            if local_queue['loopqueue']:
-                local_queue['current'] = 0
-
-        local_queue['time_elapsed'] = 0
-
-        while local_queue['current'] >= (len(local_queue['song_list'])):
-           await asyncio.sleep(1) # Stop it from playing more songs until song count is at a normal value
-           if local_queue['destroy']:
-               return
-    return

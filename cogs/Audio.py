@@ -67,9 +67,10 @@ class Audio(commands.Cog):
                     local_queue['time_elapsed'] += 1*(not local_queue['pause']) # Will add 1 if its not pause
                 # Since song finished, Go to next song
                 local_queue['current'] += 1
+                print(local_queue['current'])
                 local_queue['time_elapsed'] = 0
                 # We do a little trolling
-                vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))
+            vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))
 
 
     @commands.command()
@@ -105,7 +106,7 @@ class Audio(commands.Cog):
         
         self.bot.global_queue[vc_id]['current'] = 0
         self.bot.global_queue[vc_id]['time_elapsed'] = 0
-        await player.restart(self, ctx)
+        player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description="Replaying queue from the start", color=player_info.green))
     
     @commands.command(aliases=['s'])
@@ -145,7 +146,7 @@ class Audio(commands.Cog):
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
         local_queue['time_elapsed'] = 0
         local_queue['current'] = n
-        await player.restart(self, ctx)
+        player.restart(self, ctx)
     
     @commands.command(aliases=['b'])
     async def back(self, ctx):
