@@ -68,9 +68,15 @@ class Audio(commands.Cog):
                 # Since song finished, Go to next song
                 local_queue['current'] += 1
                 local_queue['time_elapsed'] = 0
+                
+                # Reset current song to 0 if user wants to loop the queue
+                if local_queue['loopqueue']:
+                    if local_queue['current'] >= len(local_queue['song_list']):
+                        local_queue['current'] = 0
+
                 # We do a little trolling
             vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))
-
+            
 
     @commands.command()
     async def loop(self, ctx):
