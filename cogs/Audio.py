@@ -1,4 +1,5 @@
 import discord
+import json
 from discord.ext import commands
 from utils import player, queue
 from stuff import player_info
@@ -21,12 +22,13 @@ class Audio(commands.Cog):
             text = "Queue is empty"
         else:
             local_queue = self.bot.global_queue[vc_id]
+            song_index = 0
             for song in local_queue['song_list']:
-                song_index = local_queue['song_list'].index(song)
                 if song_index == local_queue['current']:
                     text += f"**{song_index}: {song['title']}**\n"
                 else:
                     text += f"{song_index}: {song['title']}\n"
+                song_index += 1
 
         await ctx.send(embed=discord.Embed(title="Song queue", description=text, color=player_info.green))
     
@@ -41,27 +43,34 @@ class Audio(commands.Cog):
             vc = await user_vc.connect()
         
         if vc.channel.id not in self.bot.global_queue:
-            self.bot.global_queue[vc.channel.id] = {"current": 0, "song_list": [], "vc_obj": vc, "loop":False, "destroy":False, "pause":False, "time_elapsed": 0, "loopqueue":False, "ffmpeg_options":{}}
+            self.bot.global_queue[vc.channel.id] = {"current": 0, "song_list": [], "vc_obj": vc, "loop":False, "pause":False, "time_elapsed": 0, "loopqueue":False, "ffmpeg_options":{}}
         local_queue = self.bot.global_queue[vc.channel.id]
         
         queries = query.split(",")
         queue_text = ""
 
         for query in queries:
-            is_url = False
-            if query[-2:] == '-b':
-                query = query[:-2]
-                is_url = True
-
-            info = player.search(query, is_url=is_url)
+            info = await player.search(query)
             local_queue['song_list'].append(info)
             queue_text += info['title'] + '\n'
         # Remove the last newline character from string
         queue_text = queue_text[:-1]
 
         await ctx.send(embed=discord.Embed(title="Queued", description=queue_text, color=player_info.green))
-        if not vc.is_playing():
-            await player.start_song_loop(self, ctx)
+        if not (vc.is_playing() or local_queue['pause']):
+            while (local_queue['current'] < len(local_queue['song_list'])):
+                options = player.parse_options(local_queue['ffmpeg_options'])
+                song_info = local_queue['song_list'][local_queue['current']]
+                vc.play(discord.FFmpegPCMAudio(source=song_info['url'], options=options))
+                while vc.is_playing() or local_queue['pause']:
+                    await asyncio.sleep(1)
+                    local_queue['time_elapsed'] += 1*(not local_queue['pause']) # Will add 1 if its not pause
+                # Since song finished, Go to next song
+                local_queue['current'] += 1
+                local_queue['time_elapsed'] = 0
+                # We do a little trolling
+                vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))
+
 
     @commands.command()
     async def loop(self, ctx):
