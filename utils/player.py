@@ -98,6 +98,7 @@ async def search(query):
             return {
                     "title":info_dict['title'],
                     "url":info_dict['url'],
+                    "query":query,
                     "duration":info_dict['duration']
                     }
 
