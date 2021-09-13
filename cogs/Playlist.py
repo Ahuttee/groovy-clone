@@ -52,13 +52,11 @@ class Playlist(commands.Cog):
         if name not in playlists:   return await ctx.send(embed=discord.Embed(description="Playlist does not exist", color=player_info.red))
 
         play_command_text = ""
-        loading_msg = await ctx.send(embed=discord.Embed(description="Loading playlist...", color=player_info.blue))
         for song in playlists[name]:
             play_command_text += song['query'] + ","
         # Remove the last ","
         play_command_text = play_command_text[:-1]
 
-        await loading_msg.edit(embed=discord.Embed(description="Playlist loaded", color=player_info.green))
         await ctx.invoke(self.bot.get_command('play'), query=play_command_text)       
 
     @commands.command()

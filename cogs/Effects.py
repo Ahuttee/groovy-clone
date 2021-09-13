@@ -17,12 +17,12 @@ class Effects(commands.Cog):
             if not 'volume' in ffmpeg_options:
                 return
             del ffmpeg_options['volume']
-            await player.restart(self, ctx)
+            player.restart(self, ctx)
             return
 
         n = int(n)
         ffmpeg_options['volume'] = f'volume={n/100}'
-        await player.restart(self,ctx)
+        player.restart(self,ctx)
         await ctx.send(embed=discord.Embed(description=f"Volume set to {n}%", color=player_info.green))
 
     @commands.command()
@@ -35,7 +35,7 @@ class Effects(commands.Cog):
                 return
 
             del local_queue['ffmpeg_options']['speed']
-            await player.restart(self, ctx)
+            player.restart(self, ctx)
             return
 
         n = int(n)
@@ -43,7 +43,7 @@ class Effects(commands.Cog):
             return await ctx.send(embed=discord.Embed(description=f"Speed is only limited between 50% and 200%", color=player_info.green))
 
         local_queue['ffmpeg_options']['speed'] = f"atempo={n/100}"
-        await player.restart(self, ctx)
+        player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description=f"Speed set to {n}%", color=player_info.green))
 
 
@@ -89,7 +89,7 @@ class Effects(commands.Cog):
             return
 
         self.bot.global_queue[ctx.author.voice.channel.id]['ffmpeg_options'] = {}
-        await player.restart(self, ctx)
+        player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description="All effects has been cleared", color=player_info.green))
 
 
@@ -105,12 +105,12 @@ class Effects(commands.Cog):
                 return
 
             del local_queue['ffmpeg_options']['bass']
-            await player.restart(self, ctx)
+            player.restart(self, ctx)
             return
 
         n = int(n)
         local_queue['ffmpeg_options']['bass'] = f"bass=g={n}"
-        await player.restart(self, ctx)
+        player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description=f"Bass set to {n}", color=player_info.green))
 
 
@@ -126,12 +126,12 @@ class Effects(commands.Cog):
                 return
 
             del local_queue['ffmpeg_options']['pitch']
-            await player.restart(self, ctx)
+            player.restart(self, ctx)
             return
 
         n = int(n)
         local_queue['ffmpeg_options']['pitch'] = f"asetrate={n + 44100}"
-        await player.restart(self, ctx)
+        player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description=f"Pitch has been offset to {n}", color=player_info.green))
 
 

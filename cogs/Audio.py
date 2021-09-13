@@ -5,6 +5,7 @@ from utils import player, queue
 from stuff import player_info
 import asyncio
 import random
+import time
 
 class Audio(commands.Cog):
     def __init__(self, bot):
@@ -31,24 +32,51 @@ class Audio(commands.Cog):
                 song_index += 1
 
         await ctx.send(embed=discord.Embed(title="Song queue", description=text, color=player_info.green))
+ 
+    async def start_song_loop(self, ctx):
+        local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
+        vc = local_queue['vc_obj']
+        #Else
+        while (local_queue['current'] < len(local_queue['song_list'])):
+            options = player.parse_options(local_queue['ffmpeg_options'])
+            song_info = local_queue['song_list'][local_queue['current']]
+            vc.play(discord.FFmpegPCMAudio(source=song_info['url'], options=options))
+            while vc.is_playing() or local_queue['pause']:
+                await asyncio.sleep(1)
+                local_queue['time_elapsed'] += 1*(not local_queue['pause']) # Will add 1 if its not pause
+            # Since song finished, Go to next song
+            local_queue['current'] += 1
+            local_queue['time_elapsed'] = 0
+
+            # Reset current song to 0 if user wants to loop the queue
+            if local_queue['loopqueue']:
+                if local_queue['current'] >= len(local_queue['song_list']):
+                    local_queue['current'] = 0
+                    vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))  # We  do a little trolling       
+                    await asyncio.sleep(6)
+        vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8")) # Here aswell
     
     @commands.command(aliases=["p"])
     async def play(self, ctx, *, query):
+
         if ctx.author.voice == None:
             return await ctx.send(embed=discord.Embed(description="You're not connected to a voice channel", color=player_info.red))
 
         user_vc = ctx.author.voice.channel
         vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
+        # Measure time (for flexing purposes)
+        initial_time = time.monotonic()
+    
         if not vc:
             vc = await user_vc.connect()
         
         if vc.channel.id not in self.bot.global_queue:
-            self.bot.global_queue[vc.channel.id] = {"current": 0, "song_list": [], "vc_obj": vc, "loop":False, "pause":False, "time_elapsed": 0, "loopqueue":False, "ffmpeg_options":{}}
+            self.bot.global_queue[vc.channel.id] = {"current": 0, "song_list": [], "vc_obj": vc, "loop":False, "pause":False, "time_elapsed": 0, "loopqueue":True, "ffmpeg_options":{}}
         local_queue = self.bot.global_queue[vc.channel.id]
         
         queries = query.split(",")
         queue_text = ""
-
+    
         for query in queries:
             info = await player.search(query)
             local_queue['song_list'].append(info)
@@ -56,27 +84,11 @@ class Audio(commands.Cog):
         # Remove the last newline character from string
         queue_text = queue_text[:-1]
 
-        await ctx.send(embed=discord.Embed(title="Queued", description=queue_text, color=player_info.green))
+        # Done
+        time_taken = round( (time.monotonic() - initial_time) * 1000, 3)
+        await ctx.send(embed=discord.Embed(title=f"Queued ({time_taken}ms)", description=queue_text, color=player_info.green))
         if not (vc.is_playing() or local_queue['pause']):
-            while (local_queue['current'] < len(local_queue['song_list'])):
-                options = player.parse_options(local_queue['ffmpeg_options'])
-                song_info = local_queue['song_list'][local_queue['current']]
-                vc.play(discord.FFmpegPCMAudio(source=song_info['url'], options=options))
-                while vc.is_playing() or local_queue['pause']:
-                    await asyncio.sleep(1)
-                    local_queue['time_elapsed'] += 1*(not local_queue['pause']) # Will add 1 if its not pause
-                # Since song finished, Go to next song
-                local_queue['current'] += 1
-                local_queue['time_elapsed'] = 0
-                
-                # Reset current song to 0 if user wants to loop the queue
-                if local_queue['loopqueue']:
-                    if local_queue['current'] >= len(local_queue['song_list']):
-                        local_queue['current'] = 0
-
-                # We do a little trolling
-            vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))
-            
+            await self.start_song_loop(ctx)
 
     @commands.command()
     async def loop(self, ctx):
@@ -108,10 +120,14 @@ class Audio(commands.Cog):
         if await queue.check_user_vc(self.bot, ctx):
             return
         vc_id = ctx.author.voice.channel.id
-        
-        self.bot.global_queue[vc_id]['current'] = 0
-        self.bot.global_queue[vc_id]['time_elapsed'] = 0
-        player.restart(self, ctx)
+        local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
+
+        local_queue['current'] = 0
+        local_queue['time_elapsed'] = 0
+        if not (local_queue['vc_obj'].is_playing() or local_queue['pause']):
+            await self.start_song_loop(ctx)
+        else:
+            player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description="Replaying queue from the start", color=player_info.green))
     
     @commands.command(aliases=['s'])
@@ -151,7 +167,8 @@ class Audio(commands.Cog):
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
         local_queue['time_elapsed'] = 0
         local_queue['current'] = n
-        player.restart(self, ctx)
+        if not (local_queue['vc_obj'].is_playing() or local_queue['pause']): await self.start_song_loop(ctx)
+        else:   player.restart(self, ctx)
     
     @commands.command(aliases=['b'])
     async def back(self, ctx):
@@ -204,7 +221,7 @@ class Audio(commands.Cog):
 
 
         local_queue['song_list'].pop(n)
-        await ctx.send(embed=discord.Embed(description=f"Removed song number {n+1}"))
+        await ctx.send(embed=discord.Embed(description=f"Removed song number {n}", color=player_info.green))
     
     @commands.command()
     async def shuffle(self, ctx):
