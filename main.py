@@ -6,7 +6,7 @@ import os
 with open("config.json", "r") as f:
     config = json.load(f)
 bot = commands.Bot(
-        command_prefix='-',
+        command_prefix=config['prefix'],
         allowed_mentions=discord.AllowedMentions(roles=False, everyone=False, users=True)
     )
 
