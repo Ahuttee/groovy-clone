@@ -36,7 +36,7 @@ class Audio(commands.Cog):
     async def start_song_loop(self, ctx):
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
         vc = local_queue['vc_obj']
-        if vc.is_playing() or local_queue['paused']:    return
+        if vc.is_playing() or local_queue['pause']:    return
 
         #Else
         while (local_queue['current'] < len(local_queue['song_list'])):
