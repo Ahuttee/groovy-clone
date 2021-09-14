@@ -36,6 +36,8 @@ class Audio(commands.Cog):
     async def start_song_loop(self, ctx):
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
         vc = local_queue['vc_obj']
+        if vc.is_playing() or local_queue['paused']:    return
+
         #Else
         while (local_queue['current'] < len(local_queue['song_list'])):
             options = player.parse_options(local_queue['ffmpeg_options'])
@@ -87,8 +89,7 @@ class Audio(commands.Cog):
         # Done
         time_taken = round( (time.monotonic() - initial_time) * 1000, 3)
         await ctx.send(embed=discord.Embed(title=f"Queued ({time_taken}ms)", description=queue_text, color=player_info.green))
-        if not (vc.is_playing() or local_queue['pause']):
-            await self.start_song_loop(ctx)
+        await self.start_song_loop(ctx)
 
     @commands.command()
     async def loop(self, ctx):
@@ -124,8 +125,7 @@ class Audio(commands.Cog):
 
         local_queue['current'] = 0
         local_queue['time_elapsed'] = 0
-        if not (local_queue['vc_obj'].is_playing() or local_queue['pause']):
-            await self.start_song_loop(ctx)
+        await self.start_song_loop(ctx)
         else:
             player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description="Replaying queue from the start", color=player_info.green))
@@ -167,7 +167,7 @@ class Audio(commands.Cog):
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
         local_queue['time_elapsed'] = 0
         local_queue['current'] = n
-        if not (local_queue['vc_obj'].is_playing() or local_queue['pause']): await self.start_song_loop(ctx)
+        await self.start_song_loop(ctx)
         else:   player.restart(self, ctx)
     
     @commands.command(aliases=['b'])
