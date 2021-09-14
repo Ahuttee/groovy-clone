@@ -126,8 +126,7 @@ class Audio(commands.Cog):
         local_queue['current'] = 0
         local_queue['time_elapsed'] = 0
         await self.start_song_loop(ctx)
-        else:
-            player.restart(self, ctx)
+        player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description="Replaying queue from the start", color=player_info.green))
     
     @commands.command(aliases=['s'])
@@ -168,7 +167,7 @@ class Audio(commands.Cog):
         local_queue['time_elapsed'] = 0
         local_queue['current'] = n
         await self.start_song_loop(ctx)
-        else:   player.restart(self, ctx)
+        player.restart(self, ctx)
     
     @commands.command(aliases=['b'])
     async def back(self, ctx):
