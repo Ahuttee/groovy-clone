@@ -35,10 +35,10 @@ class Audio(commands.Cog):
  
     async def start_song_loop(self, ctx):
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
-        vc = local_queue['vc_obj']
-        if vc.is_playing() or local_queue['pause']:    return
-
+        if local_queue['lock']: return
+        vc = local_queue['vc_obj']  
         #Else
+        local_queue['lock'] = True
         while (local_queue['current'] < len(local_queue['song_list'])):
             options = player.parse_options(local_queue['ffmpeg_options'])
             song_info = local_queue['song_list'][local_queue['current']]
@@ -57,6 +57,7 @@ class Audio(commands.Cog):
                     vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))  # We  do a little trolling       
                     await asyncio.sleep(6)
         vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8")) # Here aswell
+        local_queue['lock'] = False
     
     @commands.command(aliases=["p"])
     async def play(self, ctx, *, query):
@@ -73,7 +74,7 @@ class Audio(commands.Cog):
             vc = await user_vc.connect()
         
         if vc.channel.id not in self.bot.global_queue:
-            self.bot.global_queue[vc.channel.id] = {"current": 0, "song_list": [], "vc_obj": vc, "loop":False, "pause":False, "time_elapsed": 0, "loopqueue":True, "ffmpeg_options":{}}
+            self.bot.global_queue[vc.channel.id] = {"lock":False, "current": 0, "song_list": [], "vc_obj": vc, "loop":False, "pause":False, "time_elapsed": 0, "loopqueue":True, "ffmpeg_options":{}}
         local_queue = self.bot.global_queue[vc.channel.id]
         
         queries = query.split(",")
