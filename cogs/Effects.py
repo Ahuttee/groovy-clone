@@ -69,10 +69,8 @@ class Effects(commands.Cog):
         if not local_queue['vc_obj'].is_playing():
             return await ctx.send("The song is not currently playing in this vc")
         options = player.parse_options(local_queue['ffmpeg_options'])
-        local_queue['vc_obj'].stop()
         local_queue['time_elapsed'] = n
-        local_queue['vc_obj'].play(discord.FFmpegPCMAudio(source=local_queue['song_list'][local_queue['current']]['url'], options=options + f" -vn -ss {n}"))
-
+        player.restart(self, ctx)
 
     @commands.command(aliases=['ff'])
     async def fastfoward(self, ctx, n: int):
