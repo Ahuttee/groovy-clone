@@ -47,7 +47,7 @@ class Audio(commands.Cog):
                 await asyncio.sleep(1)
                 local_queue['time_elapsed'] += 1*(not local_queue['pause']) # Will add 1 if its not pause
             # Since song finished, Go to next song
-            local_queue['current'] += 1
+            if not local_queue['loop']: local_queue['current'] += 1
             local_queue['time_elapsed'] = 0
 
             # Reset current song to 0 if user wants to loop the queue
