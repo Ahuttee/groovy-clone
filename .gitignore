@@ -12,7 +12,8 @@ songs/*
 # Config file
 config.json
 
-db/*
+db/song_index.json
+db/playlist.json
 
 # Distribution / packaging
 .Python
