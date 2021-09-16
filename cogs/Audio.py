@@ -163,8 +163,12 @@ class Audio(commands.Cog):
         """Jumps to specific location in queue, usage: jump <song number>"""
         if await queue.check_user_vc(self.bot, ctx):
             return
-
+        
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
+        if n >= len(local_queue):   return await ctx.send(embed=discord.Embed(description="Invalid song number", color=player_info.red))
+        if n < 0:   n = len(local_queue['song_list']) + n
+        if n < 0:   return await ctx.send(embed=discord.Embed(description="Invalid song number", color=player_info.red))
+
         local_queue['time_elapsed'] = 0
         local_queue['current'] = n
         await self.start_song_loop(ctx)
@@ -177,10 +181,10 @@ class Audio(commands.Cog):
             return
         
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
-        n = local_queue['current'] - 1
-        if n < 0:   n = 0
-        await self.jump(ctx, n)
-    
+        local_queue['current'] = local_queue['current'] - 1
+        if local_queue['current'] < 0:  local_queue['current'] = 0
+        local_queue['time_elapsed'] = 0
+        player.restart(self, ctx)
 
     @commands.command(aliases=['c'])
     async def clear(self, ctx):
@@ -216,8 +220,11 @@ class Audio(commands.Cog):
 
 
         local_queue = self.bot.global_queue[ctx.author.voice.channel.id]
-        if n-1 > len(local_queue['song_list']):
-            return await ctx.send("invalid song number")
+        if n >= len(local_queue['song_list']):
+            return await ctx.send(embed=discord.Embed(description="Invalid song number", color=player_info.red))
+
+        if n < 0:   n = len(local_queue['song_list']) + n
+        if n < 0:   return await ctx.send(embed=discord.Embed(description="Invalid song number", color=player_info.red)) 
 
 
         local_queue['song_list'].pop(n)
