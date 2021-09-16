@@ -4,6 +4,7 @@ import discord
 import json
 import asyncio
 import threading
+import os
 
 with open("db/song_index.json", "r") as f:
     song_index = json.load(f)
@@ -35,6 +36,7 @@ def query_exists(query):
     for yt_id in song_index:
         if query in song_index[yt_id]['queries']:
             song_info = song_index[yt_id]
+            if yt_id not in os.listdir("./songs"): return False
             return {
             "title": song_info['title'],
             "url":  song_info['url'],
@@ -57,7 +59,8 @@ def download_song(info_dict, options, query):
                 "duration": info_dict['duration']
             }
     with open('db/song_index.json', 'w') as f:
-        json.dump(song_index, f)    
+        json.dump(song_index, f)
+    print("Got here")
 
 async def search(query):
     global song_index
@@ -78,7 +81,7 @@ async def search(query):
     #else
     with youtube_dl.YoutubeDL(ytdl_options) as ytdl:
         info_dict = ytdl.extract_info('ytsearch:' + query, download=False)['entries'][0]
-    if info_dict['id'] in song_index:
+    if info_dict['id'] in song_index and info_dict['id'] in os.listdir('./songs'):
         song_index[info_dict['id']]['queries'].append(query)
         with open('db/song_index.json', 'w') as f:
             json.dump(song_index, f)
@@ -93,7 +96,7 @@ async def search(query):
                 "duration": info_dict['duration']
             }
             t = threading.Thread(target=download_song, args=[info_dict, ytdl_options, query])
-            t.setDaemon(False)
+            t.setDaemon(True)
             t.start()
             return {
                     "title":info_dict['title'],
@@ -108,8 +111,5 @@ def restart(self, ctx):
     local_queue['vc_obj'].stop()
     # Add exisitng effects
     options = parse_options(local_queue['ffmpeg_options'])
-
-    timestamp = local_queue['time_elapsed']
-    local_queue['vc_obj'].play(discord.FFmpegPCMAudio(source=local_queue['song_list'][local_queue['current']]['url'], options=options +
-f" -vn -ss {timestamp}"))
+    local_queue['vc_obj'].play(discord.FFmpegPCMAudio(before_options=f"-vn -ss {local_queue['time_elapsed']}", source=local_queue['song_list'][local_queue['current']]['url'], options=options))
 
