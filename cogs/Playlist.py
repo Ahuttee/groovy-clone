@@ -32,8 +32,8 @@ class Playlist(commands.Cog):
         if name:
             if name in public_playlist_db:
                 text = ""
-                for title in public_playlist_db[name]:
-                    text += title + "\n"
+                for song in public_playlist_db[name]:
+                    text += song['title'] + "\n"
                 return await ctx.send(embed=discord.Embed(title=name, description=text, color=player_info.green))
             else:
                 return await ctx.send(embed=discord.Embed(description="Playlist not found", color=player_info.red))
