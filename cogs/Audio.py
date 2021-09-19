@@ -246,7 +246,9 @@ class Audio(commands.Cog):
             song_list[i] = song_list[j]
             song_list[j] = temp
 
-        await self.jump(ctx, 0)
+        self.bot.global_queue[ctx.author.voice.channel.id]['current'] = 0
+        self.bot.global_queue[ctx.author.voice.channel.id]['time_elapsed'] = 0
+        player.restart(self, ctx)
         await ctx.send(embed=discord.Embed(description="Shuffled", color=player_info.green))
 
     @commands.command(aliases=['np'])
