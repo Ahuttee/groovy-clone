@@ -246,7 +246,7 @@ class Audio(commands.Cog):
             song_list[i] = song_list[j]
             song_list[j] = temp
 
-
+        await self.jump(ctx, 0)
         await ctx.send(embed=discord.Embed(description="Shuffled", color=player_info.green))
 
     @commands.command(aliases=['np'])
