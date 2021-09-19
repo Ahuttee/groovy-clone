@@ -14,6 +14,7 @@ config.json
 
 db/song_index.json
 db/playlist.json
+db/public_playlist.json
 
 # Distribution / packaging
 .Python
