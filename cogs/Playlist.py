@@ -9,7 +9,7 @@ with open("db/playlist.json", "r") as f:
 with open("db/public_playlist.json", "r") as f:
     public_playlist_db = json.load(f)
 
-# An additional retarded step to convert all id keys to string, thx json
+# An additional retarded step to convert all id keys to integer, thx json
 playlist_db = { int(user_id):value for user_id,value in playlist_db.items() }
 
 class Playlist(commands.Cog):
