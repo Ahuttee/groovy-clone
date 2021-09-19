@@ -56,9 +56,13 @@ class Playlist(commands.Cog):
             play_command_text += song['query'] + ","
         # Remove the last ","
         play_command_text = play_command_text[:-1]
+        if overwrite:
+            if ctx.author.voice.channel.id in self.bot.global_queue:
+                self.bot.global_queue[ctx.author.voice.channel.id]['song_list'] = []
+                self.bot.global_queue[ctx.author.voice.channel.id]['time_elapsed'] = 0
 
-        await ctx.invoke(self.bot.get_command('play'), query=play_command_text)       
-
+        await ctx.invoke(self.bot.get_command('play'), query=play_command_text) 
+        if overwrite:   await ctx.invoke(self.bot.get_command('jump'), n=0)       
     @commands.command()
     async def append(self, ctx, *, name):
         await self.load(ctx, name=name, overwrite=False)
