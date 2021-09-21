@@ -1,17 +1,40 @@
 import discord
 from discord.ext import commands
 import lyricsgenius
+from youtube_dl import YoutubeDL
 from stuff import player_info
 import json
+import os
 
 with open("config.json", 'r') as f:
     config = json.load(f)
+with open("db/song_index.json", 'r') as f:
+    song_index = json.load(f)
 
 genius = lyricsgenius.Genius(config['geniusapitoken'])
+
 
 class Misc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command()
+    async def db(self, ctx, command, *, query):
+        if ctx.author.id not in config['authorized']: return
+
+        if command == 'get':
+            with YoutubeDL({'noplaylists':True,'quiet':True, 'format':'bestaudio'}) as ytdl:
+                info = ytdl.extract_info("ytsearch:" + query,download=False)['entries'][0]
+            text = f"title: {info['title']}\nid: {info['id']}\nfilesize: {info['filesize']} bytes\nduration: {info['duration']}s\n"
+            text += f"in song_index? {info['id'] in song_index}\n"
+            filepath = "./songs/" + info['id']
+            text += f"supposed filepath: {filepath}\n"
+            text += f"full file exists? {os.path.exists(filepath)}\n"
+            text += f".part file exists? {os.path.exists(filepath + '.part')}\n"
+            if info['id'] in song_index:
+                text += f"queries: {song_index[info['id']]['queries']}"
+            
+            await ctx.send(text)
 
     @commands.command(aliases=['lyric'])
     async def lyrics(self, ctx, *, song_name=None):
