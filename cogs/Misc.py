@@ -11,7 +11,7 @@ with open("config.json", 'r') as f:
 with open("db/song_index.json", 'r') as f:
     song_index = json.load(f)
 
-genius = lyricsgenius.Genius(config['geniusapitoken'])
+genius = lyricsgenius.Genius(os.environ['GENIUS_TOKEN'])
 
 
 class Misc(commands.Cog):
