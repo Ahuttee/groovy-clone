@@ -13,14 +13,23 @@ with open("db/song_index.json", 'r') as f:
 
 genius = lyricsgenius.Genius(os.environ['GENIUS_TOKEN'])
 
+def auth(ctx):
+    return ctx.author.id in config['authorized']
 
 class Misc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    
     @commands.command()
+    @commands.check(auth)
+    async def shell(self, ctx, *, args):
+        await ctx.send(subprocess.getoutput(args))
+           
+
+    @commands.command()
+    @commands.check(auth)
     async def db(self, ctx, command, *, query):
-        if ctx.author.id not in config['authorized']: return
 
         if command == 'get':
             with YoutubeDL({'noplaylists':True,'quiet':True, 'format':'bestaudio'}) as ytdl:
