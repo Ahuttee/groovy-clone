@@ -5,6 +5,7 @@ from youtube_dl import YoutubeDL
 from stuff import player_info
 import json
 import os
+import subprocess
 
 with open("config.json", 'r') as f:
     config = json.load(f)
