@@ -37,7 +37,8 @@ async def search(query):
     "format": "bestaudio",
     "quiet": True,
         }
-    song_info = query_exists(query)
+    with youtube_dl.YoutubeDL(ytdl_options) as ytdl:
+        song_info = ytdl.extract_info('ytsearch:' + query, download=False)['entries'][0]
     if song_info:
         return {
             "title": song_info['title'],
