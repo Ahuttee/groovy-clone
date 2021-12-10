@@ -89,7 +89,9 @@ class Audio(commands.Cog):
 
         # Done
         time_taken = round( (time.monotonic() - initial_time) * 1000, 3)
-        await ctx.send(embed=discord.Embed(title=f"Queued", description=queue_text, footer=f"{time_taken}ms", color=player_info.green))
+        embed = discord.Embed(title=f"Queued", description=queue_text, color=player_info.green)
+        embed.set_footer(text=f"{time_taken}ms")
+        await ctx.send(embed=embed)
         await self.start_song_loop(ctx)
 
     @commands.command()
