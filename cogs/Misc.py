@@ -9,8 +9,6 @@ import subprocess
 
 with open("config.json", 'r') as f:
     config = json.load(f)
-with open("db/song_index.json", 'r') as f:
-    song_index = json.load(f)
 
 genius = lyricsgenius.Genius(os.environ['GENIUS_TOKEN'])
 

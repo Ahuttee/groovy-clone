@@ -54,9 +54,6 @@ class Audio(commands.Cog):
             if local_queue['loopqueue']:
                 if local_queue['current'] >= len(local_queue['song_list']):
                     local_queue['current'] = 0
-                    vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8"))  # We  do a little trolling       
-                    await asyncio.sleep(6)
-        vc.play(discord.FFmpegPCMAudio(source="songs/vVR8yM-POY8")) # Here aswell
         local_queue['lock'] = False
     
     @commands.command(aliases=["p"])
@@ -82,14 +79,17 @@ class Audio(commands.Cog):
     
         for query in queries:
             info = await player.search(query)
+            if info:
+                queue_text += info['title'] + '\n'
+            else:
+                queue_text += "Unable to queue " + query + "\n"
             local_queue['song_list'].append(info)
-            queue_text += info['title'] + '\n'
         # Remove the last newline character from string
         queue_text = queue_text[:-1]
 
         # Done
         time_taken = round( (time.monotonic() - initial_time) * 1000, 3)
-        await ctx.send(embed=discord.Embed(title=f"Queued ({time_taken}ms)", description=queue_text, color=player_info.green))
+        await ctx.send(embed=discord.Embed(title=f"Queued", description=queue_text, footer=f"{time_taken}ms", color=player_info.green))
         await self.start_song_loop(ctx)
 
     @commands.command()
